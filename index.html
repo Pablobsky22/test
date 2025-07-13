@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casa con Divs</title>
+
+    <link rel="stylesheet" href="./src/styles/juego_de_cartas_2.css"/>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --text-color: #333;
+            --light-color: #f8f9fa;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Memorama Avanzado</h1>
+        <div class="difficulty-selector">
+            <button class="difficulty-btn active" data-difficulty="easy">Fácil (4x4)</button>
+            <button class="difficulty-btn" data-difficulty="medium">Medio (4x5)</button>
+            <button class="difficulty-btn" data-difficulty="hard">Difícil (6x6)</button>
+        </div>
+    </header>
+    
+    <div class="game-container">
+        <div class="game-info">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-value" id="moves">0</span>
+                    <span class="stat-label">Movimientos</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="pairs">0</span>
+                    <span class="stat-label">Parejas</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="timer">00:00</span>
+                    <span class="stat-label">Tiempo</span>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="resetBtn">Reiniciar</button>
+                <button id="helpBtn">Ayuda</button>
+            </div>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+    </div>
+    
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <h2>¡Felicidades!</h2>
+            <p>Has completado el juego en <span id="finalMoves">0</span> movimientos y <span id="finalTime">00:00</span> segundos.</p>
+            <div class="modal-buttons">
+                <button id="playAgainBtn">Jugar otra vez</button>
+                <button id="closeModalBtn">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <h2>¿Cómo jugar?</h2>
+            <p>Encuentra todas las parejas de cartas iguales en el menor tiempo y con la menor cantidad de movimientos posibles.</p>
+            <p><strong>Instrucciones:</strong></p>
+            <ul style="text-align: left; margin: 1rem 0; padding-left: 1.5rem;">
+                <li>Haz clic en una carta para voltearla</li>
+                <li>Encuentra dos cartas iguales para formar una pareja</li>
+                <li>Las parejas correctas permanecerán visibles</li>
+                <li>El juego termina cuando encuentras todas las parejas</li>
+            </ul>
+            <div class="modal-buttons">
+                <button id="closeHelpBtn">Entendido</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementos del DOM
+            const gameBoard = document.getElementById('gameBoard');
+            const movesDisplay = document.getElementById('moves');
+            const pairsDisplay = document.getElementById('pairs');
+            const timerDisplay = document.getElementById('timer');
+            const resetBtn = document.getElementById('resetBtn');
+            const helpBtn = document.getElementById('helpBtn');
+            const winModal = document.getElementById('winModal');
+            const finalMoves = document.getElementById('finalMoves');
+            const finalTime = document.getElementById('finalTime');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const helpModal = document.getElementById('helpModal');
+            const closeHelpBtn = document.getElementById('closeHelpBtn');
+            const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+            
+            // Variables del juego
+            let cards = [];
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let moves = 0;
+            let timer = null;
+            let seconds = 0;
+            let isPlaying = false;
+            let currentDifficulty = 'easy';
+            const difficultySettings = {
+                easy: { rows: 4, cols: 4, symbols: ['🍎', '🍌', '🍒', '🍓', '🍊', '🍋', '🍐', '🍇'] },
+                medium: { rows: 4, cols: 5, symbols: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯'] },
+                hard: { rows: 6, cols: 6, symbols: ['🚗', '✈️', '🚢', '🚲', '🚀', '🛵', '🚚', '🚑', '🚒', '🏎️', '🚜', '🛴', '🚁', '⛵', '🛶', '🚂', '🚊', '🚇'] }
+            };
+            
+            // Inicializar el juego
+            function initGame() {
+                stopTimer();
+                resetGame();
+                setupGameBoard();
+            }
+            
+            // Configurar el tablero según la dificultad
+            function setupGameBoard() {
+                const settings = difficultySettings[currentDifficulty];
+                const pairsNeeded = (settings.rows * settings.cols) / 2;
+                const symbols = settings.symbols.slice(0, pairsNeeded);
+                
+                // Crear pares de cartas
+                cards = [...symbols, ...symbols];
+                shuffleCards();
+                
+                // Configurar el grid
+                gameBoard.style.gridTemplateColumns = `repeat(${settings.cols}, 1fr)`;
+                gameBoard.innerHTML = '';
+                
+                // Crear las cartas
+                cards.forEach((symbol, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.dataset.symbol = symbol;
+                    card.dataset.index = index;
+                    
+                    card.innerHTML = `
+                        <div class="card-face card-front">${symbol}</div>
+                        <div class="card-face card-back"></div>
+                    `;
+                    
+                    card.addEventListener('click', () => flipCard(card));
+                    gameBoard.appendChild(card);
+                });
+            }
+            
+            // Barajar las cartas (algoritmo Fisher-Yates)
+            function shuffleCards() {
+                for (let i = cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [cards[i], cards[j]] = [cards[j], cards[i]];
+                }
+            }
+            
+            // Voltear una carta
+            function flipCard(card) {
+                if (!isPlaying) {
+                    startTimer();
+                    isPlaying = true;
+                }
+                
+                // No hacer nada si la carta ya está volteada o emparejada
+                if (card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length >= 2) {
+                    return;
+                }
+                
+                card.classList.add('flipped');
+                flippedCards.push(card);
+                
+                // Si tenemos dos cartas volteadas, verificar si coinciden
+                if (flippedCards.length === 2) {
+                    moves++;
+                    movesDisplay.textContent = moves;
+                    
+                    if (flippedCards[0].dataset.symbol === flippedCards[1].dataset.symbol) {
+                        // Pareja encontrada
+                        flippedCards.forEach(card => card.classList.add('matched'));
+                        matchedPairs++;
+                        pairsDisplay.textContent = matchedPairs;
+                        flippedCards = [];
+                        
+                        // Verificar si el juego ha terminado
+                        const settings = difficultySettings[currentDifficulty];
+                        if (matchedPairs === (settings.rows * settings.cols) / 2) {
+                            endGame();
+                        }
+                    } else {
+                        // No coinciden, voltear de nuevo después de un breve retraso
+                        setTimeout(() => {
+                            flippedCards.forEach(card => {
+                                card.classList.add('mismatched');
+                                setTimeout(() => {
+                                    card.classList.remove('flipped', 'mismatched');
+                                }, 500);
+                            });
+                            flippedCards = [];
+                        }, 1000);
+                    }
+                }
+            }
+            
+            // Temporizador
+            function startTimer() {
+                seconds = 0;
+                updateTimerDisplay();
+                timer = setInterval(() => {
+                    seconds++;
+                    updateTimerDisplay();
+                }, 1000);
+            }
+            
+            function stopTimer() {
+                clearInterval(timer);
+                timer = null;
+            }
+            
+            function updateTimerDisplay() {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                timerDisplay.textContent = `${mins}:${secs}`;
+            }
+            
+            // Finalizar el juego
+            function endGame() {
+                stopTimer();
+                isPlaying = false;
+                finalMoves.textContent = moves;
+                finalTime.textContent = timerDisplay.textContent;
+                winModal.style.display = 'flex';
+            }
+            
+            // Reiniciar el juego
+            function resetGame() {
+                flippedCards = [];
+                matchedPairs = 0;
+                moves = 0;
+                seconds = 0;
+                isPlaying = false;
+                
+                movesDisplay.textContent = '0';
+                pairsDisplay.textContent = '0';
+                timerDisplay.textContent = '00:00';
+                
+                // Resetear todas las cartas
+                document.querySelectorAll('.card').forEach(card => {
+                    card.classList.remove('flipped', 'matched', 'mismatched');
+                });
+            }
+            
+            // Event listeners
+            resetBtn.addEventListener('click', initGame);
+            playAgainBtn.addEventListener('click', () => {
+                winModal.style.display = 'none';
+                initGame();
+            });
+            closeModalBtn.addEventListener('click', () => winModal.style.display = 'none');
+            helpBtn.addEventListener('click', () => helpModal.style.display = 'flex');
+            closeHelpBtn.addEventListener('click', () => helpModal.style.display = 'none');
+            
+            // Dificultad
+            difficultyBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    difficultyBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentDifficulty = btn.dataset.difficulty;
+                    initGame();
+                });
+            });
+            
+            // Cerrar modales haciendo clic fuera del contenido
+            window.addEventListener('click', (e) => {
+                if (e.target === winModal) {
+                    winModal.style.display = 'none';
+                }
+                if (e.target === helpModal) {
+                    helpModal.style.display = 'none';
+                }
+            });
+            
+            // Iniciar el juego
+            initGame();
+        });
+    </script>
+</body>
+</html>
