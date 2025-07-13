@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casa con Divs</title>
 
-    <link rel="stylesheet" href="./src/css/stylesheetcarta.css"/>
     <link rel="stylesheet" href="./src/css/index.css"/>
+    <link rel="stylesheet" href="./src/css/stylesheetcarta.css"/>
 </head>
 
 <body>
@@ -16,6 +16,7 @@
             <button class="difficulty-btn active" data-difficulty="easy">Fácil (4x4)</button>
             <button class="difficulty-btn" data-difficulty="medium">Medio (4x5)</button>
             <button class="difficulty-btn" data-difficulty="hard">Difícil (6x6)</button>
+            <button class="difficulty-btn" data-difficulty="extremo">Difícil (8x8)</button>
         </div>
     </header>
     
@@ -102,7 +103,9 @@
             const difficultySettings = {
                 easy: { rows: 4, cols: 4, symbols: ['🍎', '🍌', '🍒', '🍓', '🍊', '🍋', '🍐', '🍇'] },
                 medium: { rows: 4, cols: 5, symbols: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯'] },
-                hard: { rows: 6, cols: 6, symbols: ['🚗', '✈️', '🚢', '🚲', '🚀', '🛵', '🚚', '🚑', '🚒', '🏎️', '🚜', '🛴', '🚁', '⛵', '🛶', '🚂', '🚊', '🚇'] }
+                hard: { rows: 6, cols: 6, symbols: ['🚗', '✈️', '🚢', '🚲', '🚀', '🛵', '🚚', '🚑', '🚒', '🏎️', '🚜', '🛴', '🚁', '⛵', '🛶', '🚂', '🚊', '🚇'] },
+                //add etreme dificulty
+                extremo: { rows: 8, cols: 8, symbols: ['🚗', '✈️', '🚢', '🚲','🚗', '✈️', '🚢', '🚲','🚗', '✈️', '🚢', '🚲','🚗', '✈️', '🚢', '🚲','🚗', '✈️', '🚢', '🚲', '🚀', '🛵', '🚚', '🚑', '🚒', '🏎️', '🚜', '🛴', '🚁', '⛵', '🛶', '🚂', '🚊', '🚇'] }
             };
             
             // Inicializar el juego
